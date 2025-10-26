@@ -1,7 +1,3 @@
-# Purpose: Simple WebSocket connection manager to broadcast messages to clients.
-# This is use to keeps connections in memory and broadcasts messages.
-# For production you should use a centralized pub/sub (Redis, RabbitMQ, or a managed realtime service).
-
 import json
 from typing import List
 from fastapi import WebSocket

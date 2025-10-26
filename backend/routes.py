@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from sqlalchemy.orm import Session
 from database import get_db
 import models, schemas
-from websocket_manager import manager  # your ConnectionManager
+from websocket_manager import manager  # ConnectionManager
 from typing import List
 
 router = APIRouter()
