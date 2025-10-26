@@ -1,9 +1,9 @@
-import React from 'react'
+import PollPage from './components/PollPage'
 
-const Home = () => {
+const MainPage = () => {
   return (
-    <div>Home</div>
+    <PollPage/>
   )
 }
 
-export default Home
+export default MainPage
