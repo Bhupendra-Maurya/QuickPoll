@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from sqlalchemy.orm import Session
 from database import get_db
 import models, schemas
-from websocket_manager import manager  # ConnectionManager
+from websocket_manager import manager  #  ConnectionManager
 from typing import List
 
 router = APIRouter()
@@ -147,6 +147,20 @@ async def delete_poll(poll_id: int, db: Session = Depends(get_db)):
 
 
 # ---------------- WebSocket Endpoint ----------------
+# @router.websocket("/ws")
+# async def websocket_endpoint(websocket: WebSocket):
+#     await manager.connect(websocket)
+#     try:
+#         while True:
+#             await websocket.receive_text()  # Keep connection alive
+#     except Exception:
+#         # manager.disconnect(websocket)
+#         pass
+#     finally:
+#         manager.disconnect(websocket)
+
+
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -154,7 +168,6 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             await websocket.receive_text()  # Keep connection alive
     except Exception:
-        manager.disconnect(websocket)
+        pass
     finally:
         manager.disconnect(websocket)
-    return
