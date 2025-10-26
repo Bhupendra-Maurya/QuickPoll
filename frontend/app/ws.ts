@@ -2,7 +2,7 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
 import type { WSMessage } from "./types";
 
-const WS_URL = "ws://localhost:8000/ws"; // Update if your backend WS path changes
+const WS_URL = "ws://localhost:8000/api/v1/ws";
 
 class WebSocketClient {
   private socket: ReconnectingWebSocket;

@@ -28,6 +28,7 @@ export const createPoll = async (poll: PollCreate): Promise<Poll> => {
   return response.data;
 };
 
+
 // Vote for an option
 export const voteOption = async (
   pollId: number,
