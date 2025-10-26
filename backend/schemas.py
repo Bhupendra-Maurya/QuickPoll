@@ -12,8 +12,9 @@ class OptionOut(OptionBase):
     id: int
     votes: int
 
-    class Config:
-        orm_mode = True
+    # class Config:
+        # orm_mode = True
+    model_config = {"from_attributes": True}
 
 # ------------------ Poll Schemas ------------------
 class PollBase(BaseModel):
@@ -27,5 +28,6 @@ class PollOut(PollBase):
     likes: int
     options: List[OptionOut] = []  # nested output
 
-    class Config:
-        orm_mode = True
+    # class Config:
+    #     orm_mode = True
+    model_config = {"from_attributes": True}
