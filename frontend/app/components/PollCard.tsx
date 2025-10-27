@@ -402,6 +402,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowDeleteConfirm(true)}
+            disabled={true}
             className="p-2 rounded-full bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
           >
             <svg
