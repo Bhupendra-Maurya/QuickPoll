@@ -13,7 +13,8 @@ allowed_origin  = getenv("VITE_FRONTEND_URL")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # allow_origins=["*"],
+    allow_origins=allowed_origin,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,7 +24,7 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 # Routers
-app.include_router(routes.router, prefix="/api/v1", tags=["Polls"])
+app.include_router(routes.router, prefix="/api/polls", tags=["Polls"])
 
 @app.get("/")
 def root():

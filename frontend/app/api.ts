@@ -2,8 +2,7 @@ import axios from "axios";
 import { Poll, PollCreate } from "./types";
 
 // Set FastAPI backend URL
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:8000/api/v1";
-
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL
 // Axios instance
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -66,3 +65,19 @@ export const deletePoll = async (pollId: number): Promise<{ detail: string }> =>
 };
 
 export default api;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

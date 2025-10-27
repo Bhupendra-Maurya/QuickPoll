@@ -9,41 +9,65 @@ interface CreatePollModalProps {
   onPollCreated?: (poll: Poll) => void;
 }
 
+// Option with stable ID
+interface OptionWithId {
+  id: string;
+  value: string;
+}
+
+// Simple UUID generator
+const generateId = (): string => {
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 export default function CreatePollModal({
   onClose,
   onPollCreated,
 }: CreatePollModalProps) {
   const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState(["", ""]); 
+  
+  // Initialize options with stable IDs
+  const [options, setOptions] = useState<OptionWithId[]>(() => [
+    { id: generateId(), value: "" },
+    { id: generateId(), value: "" }
+  ]);
+  
   const [creating, setCreating] = useState(false);
 
   const addOption = () => {
     if (options.length < 5) {
-      setOptions([...options, ""]);
+      setOptions([...options, { id: generateId(), value: "" }]);
     }
   };
 
-  const removeOption = (index: number) => {
+  const removeOption = (id: string) => {
     if (options.length > 2) {
-      setOptions(options.filter((_, i) => i !== index));
+      setOptions(options.filter((option) => option.id !== id));
     }
   };
 
-  const updateOption = (index: number, value: string) => {
-    const newOptions = [...options];
-    newOptions[index] = value;
-    setOptions(newOptions);
+  const updateOption = (id: string, value: string) => {
+    setOptions(options.map(option => 
+      option.id === id ? { ...option, value } : option
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question || options.filter((o) => o.trim()).length < 2) return;
+    
+    // Filter out empty options
+    const validOptions = options.filter((o) => o.value.trim());
+    
+    if (!question || validOptions.length < 2) {
+      alert("Please provide a question and at least 2 options");
+      return;
+    }
 
     setCreating(true);
     try {
       const newPoll = await createPoll({
         question,
-        options: options.filter((o) => o.trim()).map((text) => ({ text })),
+        options: validOptions.map((option) => ({ text: option.value })),
       });
 
       if (onPollCreated && newPoll) {
@@ -95,11 +119,11 @@ export default function CreatePollModal({
             </label>
             <div className="space-y-3">
               {options.map((option, index) => (
-                <div key={index} className="flex gap-2">  {/* FIXED: Changed key from `${option}-${index}` to just index */}
+                <div key={option.id} className="flex gap-2">
                   <input
                     type="text"
-                    value={option}
-                    onChange={(e) => updateOption(index, e.target.value)}
+                    value={option.value}
+                    onChange={(e) => updateOption(option.id, e.target.value)}
                     placeholder={`Option ${index + 1}`}
                     className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                     required
@@ -107,7 +131,7 @@ export default function CreatePollModal({
                   {options.length > 2 && (
                     <button
                       type="button"
-                      onClick={() => removeOption(index)}
+                      onClick={() => removeOption(option.id)}
                       className="p-3 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all"
                     >
                       <svg
