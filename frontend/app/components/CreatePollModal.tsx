@@ -6,7 +6,7 @@ import { Poll } from "../types";
 
 interface CreatePollModalProps {
   onClose: () => void;
-  onPollCreated?: (poll: Poll) => void; // Add callback for new poll
+  onPollCreated?: (poll: Poll) => void;
 }
 
 export default function CreatePollModal({
@@ -14,7 +14,7 @@ export default function CreatePollModal({
   onPollCreated,
 }: CreatePollModalProps) {
   const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState(["", ""]);
+  const [options, setOptions] = useState(["", ""]); 
   const [creating, setCreating] = useState(false);
 
   const addOption = () => {
@@ -46,7 +46,6 @@ export default function CreatePollModal({
         options: options.filter((o) => o.trim()).map((text) => ({ text })),
       });
 
-      // Call the callback with the new poll if it exists
       if (onPollCreated && newPoll) {
         onPollCreated(newPoll);
       }
@@ -58,7 +57,6 @@ export default function CreatePollModal({
     }
   };
 
-  // Rest of the component remains the same...
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -97,7 +95,7 @@ export default function CreatePollModal({
             </label>
             <div className="space-y-3">
               {options.map((option, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={index} className="flex gap-2">  {/* FIXED: Changed key from `${option}-${index}` to just index */}
                   <input
                     type="text"
                     value={option}

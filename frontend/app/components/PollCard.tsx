@@ -18,9 +18,13 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
   const [isVoting, setIsVoting] = useState(false);
 
   // Calculate total votes using useMemo to avoid recalculation on every render
+  // Added defensive check for poll.options
   const totalVotes = useMemo(
-    () => poll.options.reduce((sum, opt) => sum + opt.votes, 0),
-    [poll.options]
+    () => {
+      if (!poll?.options || !Array.isArray(poll.options)) return 0;
+      return poll.options.reduce((sum, opt) => sum + (opt?.votes || 0), 0);
+    },
+    [poll?.options]
   );
 
   // Generate recent voters once per totalVotes change
@@ -74,8 +78,8 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
   };
 
   const getOptionPercentage = (option: Option) => {
-    if (totalVotes === 0) return 0;
-    return Math.round((option.votes / totalVotes) * 100);
+    if (!option || totalVotes === 0) return 0;
+    return Math.round(((option.votes || 0) / totalVotes) * 100);
   };
 
   const getGradientColor = (index: number) => {
@@ -88,6 +92,20 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
     ];
     return gradients[index % gradients.length];
   };
+
+  // Early return if poll data is invalid
+  if (!poll || !poll.options) {
+    return (
+      <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20">
+        <p className="text-white">Loading poll data...</p>
+      </div>
+    );
+  }
+
+  // Safe access to options for finding max votes
+  const maxVotes = poll.options?.length > 0 
+    ? Math.max(...poll.options.map((o) => o?.votes || 0))
+    : 0;
 
   return (
     <motion.div
@@ -107,7 +125,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">{poll.question}</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">{poll.question || 'Untitled Poll'}</h2>
 
         {/* Stats Row */}
         <div className="flex items-center gap-4 text-sm">
@@ -130,7 +148,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
                 clipRule="evenodd"
               />
             </svg>
-            <span>{poll.likes} likes</span>
+            <span>{poll.likes || 0} likes</span>
           </div>
         </div>
 
@@ -138,9 +156,9 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
         {recentVoters.length > 0 && (
           <div className="flex items-center gap-2 mt-3">
             <div className="flex -space-x-2">
-              {recentVoters.map((voter, i) => (
+              {recentVoters.map((voter) => (
                 <div
-                  key={i}
+                  key={voter}
                   className="w-6 h-6 rounded-full bg-linear-to-r from-purple-400 to-pink-400 border-2 border-white/20 flex items-center justify-center text-xs text-white font-bold"
                 >
                   {voter[0]}
@@ -154,12 +172,12 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
 
       {/* Options */}
       <div className="space-y-3 mb-6">
-        {poll.options.map((option, index) => {
+        {poll.options?.map((option, index) => {
+          if (!option) return null;
+          
           const percentage = getOptionPercentage(option);
           const isSelected = selectedOption === option.id;
-          const isWinning =
-            totalVotes > 0 &&
-            option.votes === Math.max(...poll.options.map((o) => o.votes));
+          const isWinning = totalVotes > 0 && option.votes === maxVotes;
 
           return (
             <motion.button
@@ -187,7 +205,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
               {/* Content */}
               <div className="relative z-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <span className="text-white font-medium">{option.text}</span>
+                  <span className="text-white font-medium">{option.text || 'Option'}</span>
                   {isWinning && totalVotes > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
@@ -207,7 +225,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
                   >
                     <span className="text-white font-bold">{percentage}%</span>
                     <span className="text-purple-200 text-sm">
-                      ({option.votes})
+                      ({option.votes || 0})
                     </span>
                   </motion.div>
                 )}
