@@ -1,8 +1,14 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Poll, Option } from "../types";
 import { voteOption, likePoll, unlikePoll, deletePoll } from "../api";
 import { motion, AnimatePresence } from "framer-motion";
+
+// export const clearAllVotes = () => {
+//   localStorage.removeItem(VOTES_STORAGE_KEY);
+//   localStorage.removeItem('liked_polls');
+//   window.location.reload(); // Refresh to reset all components
+// };
 
 interface PollCardProps {
   poll: Poll;
@@ -10,22 +16,64 @@ interface PollCardProps {
   onDelete: (pollId: number) => void;
 }
 
+// Helper functions for vote storage
+const VOTES_STORAGE_KEY = "poll_votes";
+
+const getStoredVotes = (): Record<number, number> => {
+  if (typeof window === "undefined") return {};
+  try {
+    const stored = localStorage.getItem(VOTES_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+};
+
+const storeVote = (pollId: number, optionId: number) => {
+  const votes = getStoredVotes();
+  votes[pollId] = optionId;
+  localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votes));
+};
+
+const hasVoted = (
+  pollId: number
+): { voted: boolean; optionId: number | null } => {
+  const votes = getStoredVotes();
+  return {
+    voted: pollId in votes,
+    optionId: votes[pollId] || null,
+  };
+};
+
 export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
+  // Check if user has already voted on this poll
   const [voted, setVoted] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isLiked, setIsLiked] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
 
+  // Check localStorage on mount for existing vote
+  useEffect(() => {
+    const voteStatus = hasVoted(poll.id);
+    if (voteStatus.voted) {
+      setVoted(true);
+      setSelectedOption(voteStatus.optionId);
+    }
+
+    // Also check for liked status
+    const likedPolls = localStorage.getItem("liked_polls");
+    if (likedPolls) {
+      const liked = JSON.parse(likedPolls);
+      setIsLiked(liked.includes(poll.id));
+    }
+  }, [poll.id]);
+
   // Calculate total votes using useMemo to avoid recalculation on every render
-  // Added defensive check for poll.options
-  const totalVotes = useMemo(
-    () => {
-      if (!poll?.options || !Array.isArray(poll.options)) return 0;
-      return poll.options.reduce((sum, opt) => sum + (opt?.votes || 0), 0);
-    },
-    [poll?.options]
-  );
+  const totalVotes = useMemo(() => {
+    if (!poll?.options || !Array.isArray(poll.options)) return 0;
+    return poll.options.reduce((sum, opt) => sum + (opt?.votes || 0), 0);
+  }, [poll?.options]);
 
   // Generate recent voters once per totalVotes change
   const recentVoters = useMemo(() => {
@@ -43,25 +91,39 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
       const updated = await voteOption(poll.id, optionId);
       onUpdate(updated);
       setVoted(true);
+
+      // Store vote in localStorage
+      storeVote(poll.id, optionId);
     } catch (error) {
       console.error("Vote failed:", error);
       setSelectedOption(null);
     } finally {
-      // Always clear voting state after a delay for animation
       setTimeout(() => setIsVoting(false), 500);
     }
   };
 
   const handleLike = async () => {
     try {
+      const likedPolls = JSON.parse(
+        localStorage.getItem("liked_polls") || "[]"
+      );
+
       if (isLiked) {
         const updated = await unlikePoll(poll.id);
         onUpdate(updated);
         setIsLiked(false);
+
+        // Remove from liked polls in localStorage
+        const filtered = likedPolls.filter((id: number) => id !== poll.id);
+        localStorage.setItem("liked_polls", JSON.stringify(filtered));
       } else {
         const updated = await likePoll(poll.id);
         onUpdate(updated);
         setIsLiked(true);
+
+        // Add to liked polls in localStorage
+        likedPolls.push(poll.id);
+        localStorage.setItem("liked_polls", JSON.stringify(likedPolls));
       }
     } catch (error) {
       console.error("Like/unlike failed:", error);
@@ -71,11 +133,26 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
   const handleDelete = async () => {
     try {
       await deletePoll(poll.id);
+
+      // Remove from localStorage when deleted
+      const votes = getStoredVotes();
+      delete votes[poll.id];
+      localStorage.setItem(VOTES_STORAGE_KEY, JSON.stringify(votes));
+
+      // Also remove from liked polls
+      const likedPolls = JSON.parse(
+        localStorage.getItem("liked_polls") || "[]"
+      );
+      const filtered = likedPolls.filter((id: number) => id !== poll.id);
+      localStorage.setItem("liked_polls", JSON.stringify(filtered));
+
       onDelete(poll.id);
     } catch (error) {
       console.error("Delete failed:", error);
     }
   };
+
+  // ... rest of your component remains the same
 
   const getOptionPercentage = (option: Option) => {
     if (!option || totalVotes === 0) return 0;
@@ -93,7 +170,6 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
     return gradients[index % gradients.length];
   };
 
-  // Early return if poll data is invalid
   if (!poll || !poll.options) {
     return (
       <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20">
@@ -102,10 +178,10 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
     );
   }
 
-  // Safe access to options for finding max votes
-  const maxVotes = poll.options?.length > 0 
-    ? Math.max(...poll.options.map((o) => o?.votes || 0))
-    : 0;
+  const maxVotes =
+    poll.options?.length > 0
+      ? Math.max(...poll.options.map((o) => o?.votes || 0))
+      : 0;
 
   return (
     <motion.div
@@ -125,7 +201,9 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white mb-2">{poll.question || 'Untitled Poll'}</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">
+          {poll.question || "Untitled Poll"}
+        </h2>
 
         {/* Stats Row */}
         <div className="flex items-center gap-4 text-sm">
@@ -174,7 +252,7 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
       <div className="space-y-3 mb-6">
         {poll.options?.map((option, index) => {
           if (!option) return null;
-          
+
           const percentage = getOptionPercentage(option);
           const isSelected = selectedOption === option.id;
           const isWinning = totalVotes > 0 && option.votes === maxVotes;
@@ -205,7 +283,9 @@ export default function PollCard({ poll, onUpdate, onDelete }: PollCardProps) {
               {/* Content */}
               <div className="relative z-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <span className="text-white font-medium">{option.text || 'Option'}</span>
+                  <span className="text-white font-medium">
+                    {option.text || "Option"}
+                  </span>
                   {isWinning && totalVotes > 0 && (
                     <motion.span
                       initial={{ scale: 0 }}
