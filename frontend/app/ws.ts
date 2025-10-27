@@ -2,7 +2,6 @@
 import ReconnectingWebSocket from "reconnecting-websocket";
 import type { WSMessage } from "./types";
 
-// const WS_URL = "ws://localhost:8000/api/polls/ws";
 const WS_URL = process.env.NEXT_PUBLIC_WS_BASE_URL as string;
 
 
