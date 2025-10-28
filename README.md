@@ -3,7 +3,7 @@
 ## [![Live Demo](https://img.shields.io/badge/demo-live-success)](https://quick-pol1.vercel.app/)
 
 <a href="https://your-link.com" target="_blank">
-  <img src="./public/image.png" alt="Quick Poll" />
+  <img src="./frontend/public/image.png" alt="Quick Poll" />
 </a>
 
 > A modern, real-time polling platform built with Next.js and FastAPI that enables instant vote tracking and engagement through WebSocket technology.
